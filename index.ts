@@ -111,12 +111,6 @@ export function start(context?: AudioContext, contextOptions?: AudioContextOptio
         done(context)
         return
       }
-      if (navigator.userActivation.hasBeenActive) {
-        // don't spam the user forever if they intentionally blocked sounds
-        rejectPtr = window.setTimeout(() => {
-          fail(context)
-        }, 4_000)
-      }
     }, 200)
   })
 }
