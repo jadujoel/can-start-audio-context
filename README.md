@@ -1,15 +1,9 @@
 # can-start-audio-context
 
-To install dependencies:
+Usage
 
-```bash
-bun install
+```js
+import { start } from "can-start-audio-context"
+const ctx = await start(undefined, { latencyHint: "playback", sampleRate: 48_000 })
+console.log(ctx.state) // "running"
 ```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.0. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.

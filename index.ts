@@ -33,9 +33,7 @@ function check(context?: AudioContext) {
     return true
   }
   if (isNavigatorWithAutoPlayPolicy(navigator)) {
-    if (navigator.getAutoplayPolicy("audiocontext") === "allowed") {
-      return true
-    }
+    return navigator.getAutoplayPolicy("audiocontext") === "allowed"
   } else if (navigator.userActivation.isActive) {
     return true
   } else if (navigator.userActivation.hasBeenActive) {
@@ -44,10 +42,39 @@ function check(context?: AudioContext) {
   return false
 }
 
-export function canStart(context?: AudioContext): Promise<void> {
-  return new Promise<void>((resolve => {
+/**
+ * Starts an audio context without console warnings.
+ *
+ * @example
+ * import { start } from "can-start-audio-context"
+ * const ctx = await start(undefined, { latencyHint: "playback", sampleRate: 48_000 })
+ * console.log(ctx.state) // "running"
+ */
+export function start(context?: AudioContext, contextOptions?: AudioContextOptions): Promise<AudioContext | never> {
+  let rejectPtr = -1
+  let intervalPtr = -1
+  let state: "init" | "resolved" | "rejected" = "init"
+  return new Promise<AudioContext>((resolve, reject) => {
+    async function done(context?: AudioContext) {
+      if (state === "init") {
+        state = "resolved"
+        clearTimeout(rejectPtr)
+        clearInterval(intervalPtr)
+        const ctx = context ?? new AudioContext(contextOptions)
+        return ctx.resume().then(() => resolve(ctx)).catch(console.warn)
+      }
+    }
+    function fail(context?: AudioContext) {
+      if (state === "init") {
+        state = "rejected"
+        clearTimeout(rejectPtr)
+        clearInterval(intervalPtr)
+        context?.close().catch(console.warn)
+        reject(new Error("User Has Blocked Audio"))
+      }
+    }
     if (check(context)) {
-      resolve()
+      done(context)
       return
     }
     // we check once for this since user might have allowed autoplay
@@ -56,23 +83,21 @@ export function canStart(context?: AudioContext): Promise<void> {
     // i think we'll still spam the console every 200ms then
     // should test that and maybe add a counter and if user hasBeenActive
     // is true then we eventually stop the interval
-    if (contextRuns()) {
+    if (!isNavigatorWithAutoPlayPolicy(navigator) && contextRuns()) {
+      done(context)
       return
     }
-    let clearScheduled = false
-    const ptr = setInterval(() => {
+    intervalPtr = window.setInterval(() => {
       if (check()) {
-        clearInterval(ptr)
-        resolve()
+        done(context)
         return
       }
-      if (navigator.userActivation.hasBeenActive && !clearScheduled) {
+      if (navigator.userActivation.hasBeenActive) {
         // don't spam the user forever if they intentionally blocked sounds
-        setTimeout(() => {
-          clearInterval(ptr)
+        rejectPtr = window.setTimeout(() => {
+          fail(context)
         }, 4_000)
-        clearScheduled = true
       }
     }, 200)
-  }))
+  })
 }

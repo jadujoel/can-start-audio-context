@@ -1,6 +1,6 @@
 {
   "name": "can-start-audio-context",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "module": "dist/index.d.ts",
   "type": "module",
   "devDependencies": {
@@ -17,5 +17,8 @@
     "dist",
     "index.ts",
     "README.json"
-  ]
+  ],
+  "scripts": {
+    "build": "bun build.ts"
+  }
 }

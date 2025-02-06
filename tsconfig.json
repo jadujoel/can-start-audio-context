@@ -26,4 +26,5 @@
     "sourceMap": true,
     "outDir": "dist"
   },
+  "include": ["index.ts"]
 }
