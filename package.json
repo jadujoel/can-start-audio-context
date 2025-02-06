@@ -1,0 +1,21 @@
+{
+  "name": "can-start-audio-context",
+  "version": "0.0.1",
+  "module": "dist/index.d.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "exports": {
+    "default": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "index.ts",
+    "README.json"
+  ]
+}
