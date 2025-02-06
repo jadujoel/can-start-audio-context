@@ -42,6 +42,19 @@ function check(context?: AudioContext) {
   return false
 }
 
+// for some reason userActivation does not behave the same on ios safari
+// we need to use touch listener
+function isIosSafari(): boolean {
+  const ua = navigator.userAgent;
+  const isIOS = /iP(hone|od|ad)/.test(navigator.platform) ||
+                (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform)); // iPads with iOS 13+
+
+  const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS/.test(ua); // Exclude Chrome, Firefox on iOS
+
+  return isIOS && isSafari;
+}
+
+
 /**
  * Starts an audio context without console warnings.
  *
@@ -87,6 +100,12 @@ export function start(context?: AudioContext, contextOptions?: AudioContextOptio
       done(context)
       return
     }
+    if (isIosSafari()) {
+      window.addEventListener("touchend", () => {
+        done(context)
+      }, { once: true })
+    }
+
     intervalPtr = window.setInterval(() => {
       if (check()) {
         done(context)
