@@ -14,8 +14,11 @@ function isNavigatorWithAutoPlayPolicy(navigator: Navigator): navigator is Navig
   return navigator.getAutoplayPolicy !== undefined
 }
 
-function contextRuns(): boolean {
-  const context = new AudioContext()
+function contextRuns(context?: AudioContext): boolean {
+  if (context !== undefined) {
+    return context.state === "running"
+  }
+  context = new AudioContext()
   if (context.state === "running") {
     context.close().catch()
     return true
@@ -25,7 +28,10 @@ function contextRuns(): boolean {
   }
 }
 
-function check() {
+function check(context?: AudioContext) {
+  if (context?.state === "running") {
+    return true
+  }
   if (isNavigatorWithAutoPlayPolicy(navigator)) {
     if (navigator.getAutoplayPolicy("audiocontext") === "allowed") {
       return true
@@ -38,9 +44,9 @@ function check() {
   return false
 }
 
-export function canStart(): Promise<void> {
+export function canStart(context?: AudioContext): Promise<void> {
   return new Promise<void>((resolve => {
-    if (check()) {
+    if (check(context)) {
       resolve()
       return
     }
