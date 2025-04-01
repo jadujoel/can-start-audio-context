@@ -34,9 +34,10 @@ function check(context?: AudioContext) {
   }
   if (isNavigatorWithAutoPlayPolicy(navigator)) {
     return navigator.getAutoplayPolicy("audiocontext") === "allowed"
-  } else if (navigator.userActivation.isActive) {
+    // userActivation don't exist on ios14
+  } else if (navigator.userActivation?.isActive) {
     return true
-  } else if (navigator.userActivation.hasBeenActive) {
+  } else if (navigator.userActivation?.hasBeenActive) {
     return contextRuns()
   }
   return false
@@ -75,15 +76,6 @@ export function start(context?: AudioContext, contextOptions?: AudioContextOptio
         clearInterval(intervalPtr)
         const ctx = context ?? new AudioContext(contextOptions)
         return ctx.resume().then(() => resolve(ctx)).catch(console.warn)
-      }
-    }
-    function fail(context?: AudioContext) {
-      if (state === "init") {
-        state = "rejected"
-        clearTimeout(rejectPtr)
-        clearInterval(intervalPtr)
-        context?.close().catch(console.warn)
-        reject(new Error("User Has Blocked Audio"))
       }
     }
     if (check(context)) {
