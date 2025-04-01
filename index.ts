@@ -35,12 +35,9 @@ function check(context?: AudioContext) {
   if (isNavigatorWithAutoPlayPolicy(navigator)) {
     return navigator.getAutoplayPolicy("audiocontext") === "allowed"
     // userActivation don't exist on ios14
-  } else if (navigator.userActivation === undefined) {
-    // old chrome e.g chrome on ios14
-    return contextRuns()
-  } else if (navigator.userActivation.isActive) {
+  } else if (navigator.userActivation?.isActive) {
     return true
-  } else if (navigator.userActivation.hasBeenActive) {
+  } else if (navigator.userActivation?.hasBeenActive) {
     return contextRuns()
   }
   return false
@@ -95,11 +92,9 @@ export function start(context?: AudioContext, contextOptions?: AudioContextOptio
       done(context)
       return
     }
-    if (isIosSafari()) {
-      window.addEventListener("touchend", () => {
-        done(context)
-      }, { once: true })
-    }
+    window.addEventListener("touchend", () => {
+      done(context)
+    }, { once: true })
 
     intervalPtr = window.setInterval(() => {
       if (check()) {
