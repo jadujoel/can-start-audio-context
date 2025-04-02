@@ -2,7 +2,13 @@ declare global {
   interface Navigator {
     getAutoplayPolicy?: GetAudioPlayPolicy
   }
+  interface Window {
+    AudioContext?: AudioContext
+    webkitAudioContext?: AudioContext
+  }
 }
+
+let Context = window.AudioContext ?? window.webkitAudioContext
 
 type GetAudioPlayPolicy = (type: "audiocontext") => "allowed" | "disallowed"
 
@@ -18,7 +24,7 @@ function contextRuns(context?: AudioContext): boolean {
   if (context !== undefined) {
     return context.state === "running"
   }
-  context = new AudioContext()
+  context = new Context()
   if (context.state === "running") {
     context.close().catch()
     return true
@@ -43,19 +49,6 @@ function check(context?: AudioContext) {
   return false
 }
 
-// for some reason userActivation does not behave the same on ios safari
-// we need to use touch listener
-function isIosSafari(): boolean {
-  const ua = navigator.userAgent;
-  const isIOS = /iP(hone|od|ad)/.test(navigator.platform) ||
-                (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform)); // iPads with iOS 13+
-
-  const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS/.test(ua); // Exclude Chrome, Firefox on iOS
-
-  return isIOS && isSafari;
-}
-
-
 /**
  * Starts an audio context without console warnings.
  *
@@ -65,17 +58,23 @@ function isIosSafari(): boolean {
  * console.log(ctx.state) // "running"
  */
 export function start(context?: AudioContext, contextOptions?: AudioContextOptions): Promise<AudioContext | never> {
-  let rejectPtr = -1
+  Context = window.AudioContext ?? window.webkitAudioContext
   let intervalPtr = -1
   let state: "init" | "resolved" | "rejected" = "init"
-  return new Promise<AudioContext>((resolve, reject) => {
+  return new Promise<AudioContext>((resolve) => {
     async function done(context?: AudioContext) {
       if (state === "init") {
-        state = "resolved"
-        clearTimeout(rejectPtr)
-        clearInterval(intervalPtr)
-        const ctx = context ?? new AudioContext(contextOptions)
-        return ctx.resume().then(() => resolve(ctx)).catch(console.warn)
+        if (context === undefined) {
+          context = new Context(contextOptions)
+        }
+        const ctx = context
+        return ctx.resume().then(() => {
+          clearInterval(intervalPtr)
+          if (state === "init") {
+            state = "resolved"
+            resolve(ctx)
+          }
+        }).catch(console.warn)
       }
     }
     if (check(context)) {
@@ -92,9 +91,22 @@ export function start(context?: AudioContext, contextOptions?: AudioContextOptio
       done(context)
       return
     }
+
+    window.addEventListener("click", () => {
+      done(context)
+    }, {
+      once: true,
+      capture: true,
+      passive: true
+    })
+
     window.addEventListener("touchend", () => {
       done(context)
-    }, { once: true })
+    }, {
+      once: true,
+      capture: true,
+      passive: true
+    })
 
     intervalPtr = window.setInterval(() => {
       if (check()) {

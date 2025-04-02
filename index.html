@@ -10,13 +10,45 @@ body {
 </style>
 <h1>Status: Awaiting User Interaction</h1>
 <button style="width: 300px; height: 100px;">Dummy Button</button>
+<status></status>
 <script type="module" defer async>
   import { start } from "./index.js"
   main()
   async function main() {
     console.time("start")
+    const status = document.querySelector("status")
+    window.addEventListener("touchstart", () => {
+      console.log("touchstart")
+      status.innerHTML = "touchstart"
+    })
+
+    window.addEventListener("click", () => {
+      console.log("click")
+      status.innerHTML = "click"
+    }, {
+      once: true,
+      capture: true,
+      passive: true
+    })
+
+    window.addEventListener("touchend", () => {
+      console.log("touchend")
+      status.innerHTML = "touchend"
+    }, {
+      once: true,
+      capture: true,
+      passive: true
+    })
+
+    /**
+     * @type {AudioContext}
+     */
     const context = await start(undefined, { sampleRate: 48_000 })
+    console.log("context:", context.state)
     console.timeEnd("start")
     document.querySelector("h1").innerText = "Status: Started"
+    const osc = context.createOscillator()
+    osc.connect(context.destination)
+    osc.start()
   }
 </script>

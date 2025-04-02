@@ -1,8 +1,10 @@
 import { build } from "./build"
 
 const server = Bun.serve({
-  hostname: "127.0.0.1",
+  hostname: "0.0.0.0",
+  
   async fetch(req) {
+    console.log("req", req.url)
     let pathname = new URL(req.url).pathname
     if (pathname.endsWith("/")) {
       pathname += "index.html"
