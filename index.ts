@@ -8,7 +8,17 @@ declare global {
   }
 }
 
-let Context = window.AudioContext ?? window.webkitAudioContext
+declare const webkitAudioContext: typeof AudioContext
+
+function Context(options: AudioContextOptions = {}) {
+  if (typeof AudioContext === "undefined") {
+    if (typeof webkitAudioContext === "undefined") {
+      throw new Error("Audio Context is not defined")
+    }
+    return new webkitAudioContext(options)
+  }
+  return new AudioContext(options)
+}
 
 type GetAudioPlayPolicy = (type: "audiocontext") => "allowed" | "disallowed"
 
@@ -24,7 +34,7 @@ function contextRuns(context?: AudioContext): boolean {
   if (context !== undefined) {
     return context.state === "running"
   }
-  context = new Context()
+  context = Context()
   if (context.state === "running") {
     context.close().catch()
     return true
@@ -58,14 +68,13 @@ function check(context?: AudioContext) {
  * console.log(ctx.state) // "running"
  */
 export function start(context?: AudioContext, contextOptions?: AudioContextOptions): Promise<AudioContext | never> {
-  Context = window.AudioContext ?? window.webkitAudioContext
   let intervalPtr = -1
   let state: "init" | "resolved" | "rejected" = "init"
   return new Promise<AudioContext>((resolve) => {
     async function done(context?: AudioContext) {
       if (state === "init") {
         if (context === undefined) {
-          context = new Context(contextOptions)
+          context = Context(contextOptions)
         }
         const ctx = context
         return ctx.resume().then(() => {
